@@ -2,18 +2,18 @@
 CREATE OR REPLACE FUNCTION add_forest_coverage()
 RETURNS TRIGGER AS $$
         DECLARE
-            state_area INTEGER;
-            overlap_area INTEGER;
-            x_Area INTEGER;
-            y_Area INTEGER;
-            state_rec STATE%rowtype;
+            state_area real;
+            overlap_area real;
+            x_Area real;
+            y_Area real;
+            state_rec record;
         BEGIN
            state_area := (NEW.MBR_XMax - NEW.MBR_XMin) * (NEW.MBR_YMax - NEW.MBR_YMin);
 
            FOR state_rec IN (SELECT *
             FROM STATE)
             LOOP
-               IF NEW.MBR_XMin > state_rec.MBR_XMax OR state_rec.MBR_XMin > NEW.MBR_XMax THEN
+               IF NEW.MBR_XMin < state_rec.MBR_XMax OR state_rec.MBR_XMin < NEW.MBR_XMax THEN
                    --nothing
 
                 ELSIF NEW.MBR_YMin > state_rec.MBR_YMax or state_rec.MBR_YMin > NEW.MBR_YMax THEN
