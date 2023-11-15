@@ -4,6 +4,8 @@ RETURNS TRIGGER AS $$
         DECLARE
             state_area INTEGER;
             overlap_area INTEGER;
+            x_Area INTEGER;
+            y_Area INTEGER;
             state_rec STATE%rowtype;
         BEGIN
            state_area := (NEW.MBR_XMax - NEW.MBR_XMin) * (NEW.MBR_YMax - NEW.MBR_YMin);
@@ -11,12 +13,23 @@ RETURNS TRIGGER AS $$
            FOR state_rec IN (SELECT *
             FROM STATE)
             LOOP
-               overlap_area := GREATEST(0, LEAST(NEW.MBR_XMax, state_rec.MBR_XMax) - GREATEST(NEW.MBR_XMin, state_rec.MBR_XMin)) *
-                               GREATEST(0, LEAST(NEW.MBR_YMax, state_rec.MBR_YMax) - GREATEST(NEW.MBR_YMin, state_rec.MBR_YMin));
-                IF state_area > 0 THEN
-                    INSERT INTO COVERAGE(forest_no, state, percentage, area)
-                    VALUES (NEW.fores_no, state_rec.name, (overlap_area/state_area)*100, overlap_area);
-                end if;
+               IF NEW.MBR_XMin > state_rec.MBR_XMax OR state_rec.MBR_XMin > NEW.MBR_XMax THEN
+                   --nothing
+
+                ELSIF NEW.MBR_YMin > state_rec.MBR_YMax or state_rec.MBR_YMin > NEW.MBR_YMax THEN
+                    --nothing
+
+                ELSE
+                    x_Area := LEAST(NEW.MBR_XMax, state_rec.MBR_XMax) - GREATEST(NEW.MBR_XMin, state_rec.MBR_XMin);
+                    y_Area := LEAST(NEW.MBR_YMax, state_rec.MBR_YMax) - GREATEST(NEW.MBR_YMin, state_rec.MBR_YMin);
+                    overlap_area := x_Area * y_Area;
+
+                    IF state_area > 0 THEN
+                        INSERT INTO COVERAGE(forest_no, abbreviation, percentage, area)
+                        VALUES (NEW.forest_no, state_rec.abbreviation, (overlap_area/state_rec.area)*100, overlap_area);
+
+                    end if;
+               end if;
                END LOOP;
         RETURN NEW;
         END;
@@ -36,19 +49,24 @@ CREATE CONSTRAINT TRIGGER add_forest_coverage
 CREATE OR REPLACE FUNCTION check_maintainer_employment()
 RETURNS TRIGGER AS $$
         DECLARE
-        maintainer_state TEXT;
-        sensor_location_state TEXT;
+        sensor_location_state char(2);
+        state_rec STATE%rowtype;
+        maintainer_state char(2);
         BEGIN
-        --get the state of new maintainer
-        SELECT state INTO maintainer_state
-        FROM EMPLOYED
-        WHERE worker=NEW.maintainer_id;
-        -- get sensors new location state
-        SELECT STATE INTO sensor_location_state
-        FROM COVERAGE
-        WHERE forest_no = NEW.forest_no;
+        --get the state of new Sensor
 
-        -- check if maintainers stae covers new location
+        select abbreviation INTO maintainer_state
+            FROM EMPLOYED
+            WHERE worker = NEW.maintainer_id;
+
+        FOR state_rec IN(SELECT * FROM STATE)
+        LOOP
+            IF NEW.X > state_rec.MBR_XMin AND NEW.X < state_rec.MBR_XMax AND NEW.Y < state_rec.MBR_YMax AND NEW.Y > state_rec.MBR_YMin THEN
+                sensor_location_state := state_rec.abbreviation;
+            end if;
+        end loop;
+
+     --check if maintainers stae covers new location
         IF maintainer_state IS DISTINCT FROM sensor_location_state THEN
             RAISE NOTICE 'The maintainer of this sensor is not employed by a state which covers the sensor. This operation has been reverted.';
             RAISE EXCEPTION 'The maintainer of this sensor is not employed by a state which covers the sensor. This operation has been reverted.';
