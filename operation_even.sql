@@ -206,39 +206,28 @@ $$LANGUAGE plpgsql;
 --who has the lowest SSN. However, if no other workers are employed to that state, the sensor
 --should be removed.
 
-create or replace procedure  removeWorkerFromState(SSN Integer, r_abbreviation char(2) )
+create or replace procedure  removeWorkerFromState(r_SSN Integer, r_abbreviation char(2) )
     as $$
 
     DECLARE
         new_maintainer_id varchar(9);
-        sensor_rec record;
+      
 
     begin
         DELETE FROM EMPLOYED
-        where WORKER = SSN AND
-              abbreviation = r_abbreviation;
-        FOR sensor_rec IN (
-            select sensor_id, maintainer_id
-            FROM SENSOR
-            WHERE maintainer_id = SSN
-        ) LOOP --find a new maintainer within the same state, with lowest ssn
-            SELECT W.SSN into new_maintainer_id
-            FROM WORKER W
-            JOIN EMPLOYED E on W.SSN = E.WORKER
-            WHERE E.abbreviation = r_abbreviation
-            ORDER BY W.SSN
-            LIMIT 1;
+            WHERE worker = r_snn AND
+                  abbreviation = r_abbreviation;
+        SELECT min(maintainer_id) FROM EMPLOYED
+            WHERE abbreviation = r_abbreviation into new_maintainer_id;
+        IF new_maintainer_id IS NOT NULL THEN
+            update SENSOR
+                set maintainer_id = new_maintainer_id
+                WHERE maintainer_id = r_SNN;
 
-            IF new_maintainer_id IS NOT NULL THEN
-                --update maintaier for sensor relation
-                UPDATE SENSOR
-                SET maintainer_id = new_maintainer_id
-                WHERE sensor_id = sensor_rec.sensor_id;
-            ELSE
-                DELETE FROM SENSOR
-                WHERE sensor_id = sensor_rec.sensor_id;
-            end if;
-            end loop;
+        ELSE
+            delete from SENSOR
+            where new_maintainer_id = r_SSN;
+        end if;
     end;
 $$ language plpgsql;
 
