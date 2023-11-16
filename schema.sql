@@ -1,6 +1,6 @@
 ---------------------------------------------
 --schema for proejct 1 phase 2 part 1
---author: Hongkun Yao, Adam
+--author: Hongkun Yao, Adam Sheelar
 ---------------------------------------------
 
 DROP SCHEMA IF EXISTS schema CASCADE;
@@ -24,6 +24,7 @@ CREATE TABLE FOREST(
 
       CONSTRAINT FOREST_PK PRIMARY KEY (forest_no)
 );
+
 CREATE TABLE STATE(
     --name is the alternative key in state
     name VARCHAR(30) UNIQUE NOT NULL,
@@ -70,7 +71,7 @@ CREATE TABLE SENSOR(
 );
 
 CREATE DOMAIN LIFE_FORM AS VARCHAR(16)
-CHECK (VALUE IN ('Phanerophytes', 'Epiphytes', 'Chamaephytes', 'Hemicryptophytes', 'Cryptophytes', 'Therophytes', 'Aerophytes'))
+CHECK (VALUE IN ('Phanerophytes', 'Epiphytes', 'Chamaephytes', 'Hemicryptophytes', 'Cryptophytes', 'Therophytes', 'Aerophytes'));
 
 CREATE TABLE TREE_SPECIES(
     genus VARCHAR(30),
@@ -198,6 +199,7 @@ BEGIN
         --if this forest have no tree species, delete
         DELETE FROM FOREST WHERE forest_no = old.forest_no;
     end if;
+    RETURN NEW;
 end;
 $$ LANGUAGE plpgsql;
 --drop the trigger if it exists
@@ -229,6 +231,7 @@ BEGIN
         --if this forest isn't covered by any state, delete
         DELETE FROM FOREST WHERE forest_no = old.forest_no;
     end if;
+    RETURN NEW;
 end;
 $$ LANGUAGE plpgsql;
 
@@ -258,8 +261,9 @@ BEGIN
 
     IF num_employment < 1 THEN
         --if this worker is not employed by any state, delete
-        DELETE FROM WORKER WHERE WORKER = old.WORKER;
+        DELETE FROM WORKER WHERE SSN = old.WORKER;
     end if;
+    RETURN NEW;
 end;
 $$ LANGUAGE plpgsql;
 
