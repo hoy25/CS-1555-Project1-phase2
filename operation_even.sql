@@ -15,9 +15,9 @@ create or replace procedure addForest(
         declare
             newForest_no integer;
         begin
-            select MAX(forest_no) into newForest_no FROM forest;
+            select COALESCE(MAX(forest_no), 0)+1 into newForest_no FROM forest;
             insert into FOREST
-            Values(newForest_no+1, name, area, acid_level, MBR_XMin, MBR_XMax, MBR_YMin, MBR_YMax);
+            Values(newForest_no, name, area, acid_level, MBR_XMin, MBR_XMax, MBR_YMin, MBR_YMax);
     end;
     $$ language plpgsql;
 
@@ -84,7 +84,7 @@ $$LANGUAGE plpgsql;
 create or replace PROCEDURE employWorkerToState(abb CHAR(2),  SSN VARCHAR(9)) AS
     $$
     declare
-        storedState real;
+        storedState CHAR(2);
     begin
         select abbreviation from STATE
             WHERE STATE.abbreviation = abb INTO storedState;
@@ -114,7 +114,7 @@ DECLARE
     last_read TIMESTAMP;
 
 BEGIN
-    SELECT MAX(sensor_id) INTO NEW_sensor_id
+    SELECT COALESCE(MAX(sensor_id), 0)+1 INTO NEW_sensor_id
     FROM SENSOR;
     SELECT synthetic_time INTO last_charged
     FROM CLOCK;
@@ -122,7 +122,7 @@ BEGIN
     FROM CLOCK;
 
     INSERT INTO SENSOR (sensor_id, last_charged, energy, last_read, x, y, maintainer_id)
-    VALUES (NEW_sensor_id+1,last_charged,energy,last_read,X,Y,maintainer_id);
+    VALUES (NEW_sensor_id,last_charged,energy,last_read,X,Y,maintainer_id);
 
 END;
 $$LANGUAGE plpgsql;
@@ -165,17 +165,11 @@ $$LANGUAGE plpgsql;
 --the worker should no longer be employed by any states and all sensors maintained by the worker
 --should be removed.
 
-create or replace PROCEDURE deleteWorker(WORKER_SSN INTEGER) as $$
+create or replace PROCEDURE deleteWorker(WORKER_SSN VARCHAR(9)) as $$
 
     begin
         DELETE from WORKER
         WHERE SSN = WORKER_SSN;
-
-        DELETE FROM EMPLOYED
-        WHERE WORKER = WORKER_SSN;
-
-        DELETE FROM SENSOR
-        WHERE maintainer_id = WORKER_SSN;
     end;
     $$ language plpgsql;
 
@@ -206,7 +200,7 @@ $$LANGUAGE plpgsql;
 --who has the lowest SSN. However, if no other workers are employed to that state, the sensor
 --should be removed.
 
-create or replace procedure  removeWorkerFromState(r_SSN Integer, r_abbreviation char(2) )
+create or replace procedure  removeWorkerFromState(r_SSN VARCHAR(9), r_abbreviation char(2) )
     as $$
 
     DECLARE
@@ -215,14 +209,14 @@ create or replace procedure  removeWorkerFromState(r_SSN Integer, r_abbreviation
 
     begin
         DELETE FROM EMPLOYED
-            WHERE worker = r_snn AND
+            WHERE worker = r_SSN AND
                   abbreviation = r_abbreviation;
-        SELECT min(maintainer_id) FROM EMPLOYED
+        SELECT min(worker) FROM EMPLOYED
             WHERE abbreviation = r_abbreviation into new_maintainer_id;
         IF new_maintainer_id IS NOT NULL THEN
             update SENSOR
                 set maintainer_id = new_maintainer_id
-                WHERE maintainer_id = r_SNN;
+                WHERE maintainer_id = r_SSN;
 
         ELSE
             delete from SENSOR
@@ -276,7 +270,7 @@ create or replace function listSensors(l_forest_id integer)
             FROM SENSOR S JOIN
                 EMPLOYED E ON S.maintainer_id = E.WORKER
             JOIN
-                COVERAGE C ON E.abbreviation = C.abbreviation AND C.forest_no  = l_forest_id;
+                COVERAGE C ON E.abbreviation = C.state AND C.forest_no  = l_forest_id;
         end;
     $$ language plpgsql;
 
@@ -286,7 +280,7 @@ create or replace function listSensors(l_forest_id integer)
 --display all sensors that the worker is currently maintaining.
 ------------------------
 
-CREATE OR REPLACE FUNCTION listMaintainedSensors (worker_SSN char(9))
+CREATE OR REPLACE FUNCTION listMaintainedSensors (w_SSN varchar(9))
     RETURNS TABLE (
         sensor_id INTEGER,
         last_charged timestamp,
@@ -301,7 +295,7 @@ BEGIN
     RETURN QUERY
     SELECT sensor_id, last_charged,energy,last_read,X,Y,maintainer_id
     FROM SENSOR
-    WHERE  maintainer_id = worker_SSN;
+    WHERE  maintainer_id = w_SSN;
 end;
 $$ LANGUAGE plpgsql;
 
