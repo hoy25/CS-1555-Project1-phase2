@@ -1,3 +1,4 @@
+SET SCHEMA 'schema';
 --addForestCoverage
 CREATE OR REPLACE FUNCTION add_forest_coverage()
 RETURNS TRIGGER AS $$
