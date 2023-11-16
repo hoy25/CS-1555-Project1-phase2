@@ -2,34 +2,27 @@
 CREATE OR REPLACE FUNCTION add_forest_coverage()
 RETURNS TRIGGER AS $$
         DECLARE
-            state_area real;
+
             overlap_area real;
             x_Area real;
             y_Area real;
-            state_rec record;
+            state_rec STATE%rowtype;
         BEGIN
-           state_area := (NEW.MBR_XMax - NEW.MBR_XMin) * (NEW.MBR_YMax - NEW.MBR_YMin);
+
 
            FOR state_rec IN (SELECT *
             FROM STATE)
             LOOP
-               IF NEW.MBR_XMin < state_rec.MBR_XMax OR state_rec.MBR_XMin < NEW.MBR_XMax THEN
-                   --nothing
-
-                ELSIF NEW.MBR_YMin > state_rec.MBR_YMax or state_rec.MBR_YMin > NEW.MBR_YMax THEN
-                    --nothing
-
-                ELSE
+               IF NOT ((NEW.MBR_XMin > state_rec.MBR_XMax) or (state_rec.MBR_XMin > NEW.MBR_XMax) OR
+                       (NEW.MBR_YMin > state_rec.MBR_YMax) or  (state_rec.MBR_YMin > NEW.MBR_YMax))  THEN
                     x_Area := LEAST(NEW.MBR_XMax, state_rec.MBR_XMax) - GREATEST(NEW.MBR_XMin, state_rec.MBR_XMin);
                     y_Area := LEAST(NEW.MBR_YMax, state_rec.MBR_YMax) - GREATEST(NEW.MBR_YMin, state_rec.MBR_YMin);
                     overlap_area := x_Area * y_Area;
-
-                    IF state_area > 0 THEN
+               end if;
+                IF overlap_area > 0 and state_rec.area > 0 THEN
                         INSERT INTO COVERAGE(forest_no, abbreviation, percentage, area)
                         VALUES (NEW.forest_no, state_rec.abbreviation, (overlap_area/state_rec.area)*100, overlap_area);
-
                     end if;
-               end if;
                END LOOP;
         RETURN NEW;
         END;
@@ -50,7 +43,7 @@ CREATE OR REPLACE FUNCTION check_maintainer_employment()
 RETURNS TRIGGER AS $$
         DECLARE
         sensor_location_state char(2);
-        state_rec STATE%rowtype;
+        state_rec record;
         maintainer_state char(2);
         BEGIN
         --get the state of new Sensor
