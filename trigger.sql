@@ -21,7 +21,7 @@ RETURNS TRIGGER AS $$
                     overlap_area := x_Area * y_Area;
                end if;
                 IF overlap_area > 0 and state_rec.area > 0 THEN
-                        INSERT INTO COVERAGE(forest_no, abbreviation, percentage, area)
+                        INSERT INTO COVERAGE(forest_no, state, percentage, area)
                         VALUES (NEW.forest_no, state_rec.abbreviation, (overlap_area/state_rec.area)*100, overlap_area);
                     end if;
                END LOOP;
