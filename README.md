@@ -4,10 +4,21 @@ Author: Adam Sheeler, Hongkun Yao
 This is a databse system that supports the operations of `ArborDB`, an IoT system monitoring forests, by following the development cycle of a database application.
 
 # How to start:
-1. Make sure you download the JDBC driver and put all files into the same folder.
-2. Ensure you run all sql file before using the JDBC. Here is the URL: `URL = "jdbc:postgresql://localhost:5432/postgres?currentSchema=schema"`
+1. `Download the JDBC Driver`: Begin by downloading the JDBC driver compatible with your database. Place all the JDBC driver files into a single folder for easy access.
+2. `Database Preparation`: Execute all necessary SQL files to set up your database schema before connecting through JDBC. Utilize the following connection URL in your Java application: `URL = "jdbc:postgresql://localhost:5432/postgres?currentSchema=schema"`
 
-After you finish every step, you will located directly back to main meau, and the outcome of previous step will locate before the main meau. You may recieve the expception `SQLException` for connection problems, and `NumberFormatException` for entering mismatched value. All other exception will stop executing the system. All previous outcomes will be saved, but you have to restart the java file and re-connect the JDBC.
+# Workflow:
+Once you've completed the above steps, the JDBC application will guide you through each operation. Upon the completion of an operation, you will be automatically returned to the main menu. The result of the operation will be displayed just before the menu options reappear.
+
+# Exception Handling:
+
+1. `SQLException`: This exception may occur if there are issues with the database connection. Please verify your connection details and ensure the database server is running.
+
+2. `NumberFormatException`: This exception indicates that the input provided does not match the expected data type. Ensure that you enter the correct type of value when prompted.
+
+# System Behavior:
+
+Any other exceptions will cause the system to stop executing. While all outcomes up to the point of failure will be preserved, you will need to restart the Java application and reconnect to the JDBC to continue.
 
 # Functions: 
 1. `connect`
