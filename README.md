@@ -7,6 +7,8 @@ This is a databse system that supports the operations of `ArborDB`, an IoT syste
 1. Make sure you download the JDBC driver and put all files into the same folder.
 2. Ensure you run all sql file before using the JDBC. Here is the URL: `URL = "jdbc:postgresql://localhost:5432/postgres?currentSchema=schema"`
 
+After you finish every step, you will located directly back to main meau, and the outcome of previous step will locate before the main meau. You may recieve the expception `SQLException` for connection problems, and `NumberFormatException` for entering mismatched value. All other exception will stop executing the system. All previous outcomes will be saved, but you have to restart the java file and re-connect the JDBC.
+
 # Functions: 
 1. connect
 This operation should connect to your PostgreSQL database by prompting for a username and password to establish the connection. Recall that the default user is postgres.
