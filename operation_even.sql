@@ -302,17 +302,19 @@ $$ LANGUAGE plpgsql;
 --15. locateTreeSpecies
 --Find all forests that contain any tree species whose genus matches the pattern α or epithet
 --matches the pattern β.
-create or replace function locateTreeSpecies(pattern_alpha real, pattern_beta real)
+create or replace function locateTreeSpecies(pattern_alpha VARCHAR(30), pattern_beta VARCHAR(30))
     RETURNS TABLE
             (
                 forest_id integer
-            ) as $$
-
+            )
+    as $$
     BEGIN
         return query
-        select forest_id
-        from FOUND_IN
-        WHERE genus LIKE pattern_alpha
-        OR epithet LIKE pattern_beta;
+        select DISTINCT fi.forest_no
+        from FOUND_IN fi
+
+        WHERE fi.genus LIKE '%'|| pattern_alpha || '%'
+        OR fi.epithet LIKE '%' || pattern_beta || '%';
 end;
 $$ language plpgsql;
+
